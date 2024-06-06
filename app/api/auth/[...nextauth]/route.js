@@ -4,7 +4,7 @@ import GitHubProvider from 'next-auth/providers/github'
 import connectDB from '@/db/connectDb'
 import User from '@/models/User'
 
-const authOptions = NextAuth({
+export const authoptions = NextAuth({
 
     providers: [
         GitHubProvider({
@@ -18,55 +18,49 @@ const authOptions = NextAuth({
     ],
     secret: process.env.NEXTAUTH_SECRET,
 
+
     callbacks: {
         async signIn({ user, account, profile}) {
-            try {
+            if (account.provider === "github") {
                 await connectDB();
-                if (account.provider === "github") {
-                    const currentUser = await User.findOne({ email: user.email });
-                    if (!currentUser) {
-                        await User.create({
-                            email: user.email,
-                            username: profile.login,
-                            name: user.name,
-                            provider: account.provider,
-                        });
-                    } else {
-                        user.name = currentUser.username;
-                    }
+                const currentUser = await User.findOne({ email: user.email });
+                if (!currentUser) {
+                    const newUser = await User.create({
+                        email: user.email,
+                        username: profile.login,
+                        name: user.name,
+                        provider: account.provider,
+                    });
+                    user.name = newUser.username;
+                } else {
+                    user.name = currentUser.username;
                 }
-
-                if (account.provider === "google") {
-                    const currentUser = await User.findOne({ email: user.email});
-                    if (!currentUser) {
-                        await User.create({
-                            email: user.email,
-                            username: profile.name,
-                            name: user.name,
-                            provider: account.provider,
-                        });
-                    }
-                }
-                return true;
-            } catch (error) {
-                console.error("Error during signIn callback:", error);
-                return false;
             }
+
+
+            if (account.provider === "google") {
+                await connectDB();
+                const currentUser = await User.findOne({ email: user.email});
+                if(!currentUser) {
+                    const newUser = await User.create({
+                        email: user.email,
+                        username: profile.name,
+                        name: user.name,
+                        provider: account.provider,
+                    })
+                }
+            }
+            return true;
         },
 
         async session({ session }) {
-            try {
-                const dbUser = await User.findOne({ email: session.user.email });
-                if (dbUser) {
-                    session.user.name = dbUser.username;
-                }
-                return session;
-            } catch (error) {
-                console.error("Error during session callback:", error);
-                return session;
+            const dbUser = await User.findOne({ email: session.user.email });
+            if (dbUser) {
+                session.user.name = dbUser.username;
             }
+            return session;
         },
     }
 });
 
-export default authOptions;
+export { authoptions as GET, authoptions as POST };
