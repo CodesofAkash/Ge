@@ -72,7 +72,7 @@ const PaymentPage = ({ userData }) => {
             "description": "It is a croudfunding website.",
             "image": "/chai.gif",
             "order_id": orderId, //This is a sample Order ID. Pass the `id` obtained in the response of Step 1
-            "callback_url": "http://localhost:3000/api/razorpay",
+            "callback_url": "https://crowdfunding-project-gilt.vercel.app/api/razorpay",
             "prefill": { //We recommend using the prefill parameter to auto-fill customer's contact information especially their phone number
                 "name": "Gaurav Kumar", //your customer's name
                 "email": "gaurav.kumar@example.com",

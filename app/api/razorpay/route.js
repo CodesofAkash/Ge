@@ -17,7 +17,7 @@ export const POST = async (req) => {
 
     if(xx) {
         const updatedPayment = await Payment.findOneAndUpdate({oID : body.razorpay_order_id}, {done: true}, {new: true});
-        return NextResponse.redirect(`http://localhost:3000/users/${updatedPayment.to_user}?paymentdone=true`)
+        return NextResponse.redirect(`https://crowdfunding-project-gilt.vercel.app/users/${updatedPayment.to_user}?paymentdone=true`)
     } else {
         return NextResponse.json({success : false, message : "Payment Verification Failed"});
     }
