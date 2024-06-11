@@ -50,6 +50,7 @@ export const authoptions = NextAuth({
                         provider: account.provider,
                     })
                 }
+                return true;
             }
             return true;
         },
