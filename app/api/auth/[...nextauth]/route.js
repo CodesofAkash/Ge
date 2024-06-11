@@ -41,7 +41,8 @@ export const authoptions = NextAuth({
 
             if (account.provider === "google") {
                 console.log("\nHello Hi Bye\n");
-                // await connectDB();
+                await connectDB();
+                console.log("\nHello Hi Bye\n");
                 // const currentUser = await User.findOne({ email: user.email});
                 // if(!currentUser) {
                 //     const newUser = await User.create({
@@ -55,13 +56,13 @@ export const authoptions = NextAuth({
             return true;
         },
 
-        async session({ session }) {
-            const dbUser = await User.findOne({ email: session.user.email });
-            if (dbUser) {
-                session.user.name = dbUser.username;
-            }
-            return session;
-        },
+        // async session({ session }) {
+        //     const dbUser = await User.findOne({ email: session.user.email });
+        //     if (dbUser) {
+        //         session.user.name = dbUser.username;
+        //     }
+        //     return session;
+        // },
     }
 });
 
