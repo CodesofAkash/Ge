@@ -40,17 +40,17 @@ export const authoptions = NextAuth({
             
 
             if (account.provider === "google") {
-                await connectDB();
-                const currentUser = await User.findOne({ email: user.email});
-                if(!currentUser) {
-                    const newUser = await User.create({
-                        email: user.email,
-                        username: profile.name,
-                        name: user.name,
-                        provider: account.provider,
-                    })
-                }
-                return true;
+                console.log("\nHello Hi Bye\n");
+                // await connectDB();
+                // const currentUser = await User.findOne({ email: user.email});
+                // if(!currentUser) {
+                //     const newUser = await User.create({
+                //         email: user.email,
+                //         username: profile.name,
+                //         name: user.name,
+                //         provider: account.provider,
+                //     })
+                // }
             }
             return true;
         },
