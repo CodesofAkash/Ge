@@ -56,17 +56,17 @@ export const authoptions = NextAuth({
             return true;
         },
 
-        // async session({ session }) {
-        //     console.log("\nHello Hiiiio Bye\n");
+        async session({ session }) {
+            console.log("\nHello Hiiiio Bye\n");
 
-        //     const dbUser = await User.findOne({ email: session.user.email });
-        //     if (dbUser) {
-        //         session.user.name = dbUser.username;
-        //     }
-        //     console.log("\nHello Hiiiio Byeiioo\n");
-        //     return session;
+            const dbUser = await User.findOne({ email: session.user.email });
+            if (dbUser) {
+                session.user.name = dbUser.username;
+            }
+            console.log("\nHello Hiiiio Byeiioo\n");
+            return session;
 
-        // },
+        },
     }
 });
 
