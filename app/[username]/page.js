@@ -1,30 +1,53 @@
 "use client"
 import React, { useState, useEffect } from 'react';
 import PaymentPage from "@/components/PaymentPage";
-import { useSearchParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
+import { fetchProjects } from '@/actions/useractions';
 
 const MyAccount = () => {
-    const searchParams = useSearchParams();
+    const params = useParams();
     const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const userData = searchParams.get('userData');
-        if (userData) {
+        const fetchUserData = async () => {
             try {
-                const parsedUser = JSON.parse(userData);
-                setUser(parsedUser);
+                setLoading(true);
+                const projects = await fetchProjects();
+                const foundUser = projects.find(project => {
+                    const normalizedCreator = project.creatorName.trim();
+                    const normalizedParam = decodeURIComponent(params.username).trim();
+                    return normalizedCreator === normalizedParam});
+                
+                if (foundUser) {
+                    setUser(foundUser);
+                } else {
+                    console.error('User not found');
+                }
             } catch (error) {
-                console.error('Failed to parse userData:', error);
+                console.error('Failed to fetch user data:', error);
+            } finally {
+                setLoading(false);
             }
+        };
+
+        if (params.username) {
+            fetchUserData();
         }
-    }, [searchParams]);
+    }, [params.username]);
 
     return (
         <>
-            {user ? (
+            {loading ? (
+                <div className="flex justify-center items-center min-h-screen">
+                    <div>Loading user data...</div>
+                </div>
+            ) : user ? (
                 <PaymentPage userData={user} />
             ) : (
-                <div>Loading user data...</div>
+                <div className="flex justify-center items-center min-h-screen">
+                    <div>User not found</div>
+                </div>
             )}
         </>
     );

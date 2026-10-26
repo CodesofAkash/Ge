@@ -14,7 +14,7 @@ const Contribute = () => {
     const fetchData = async () => {
       let u = await fetchProjects();
       setusers(u);
-      console.log(users)
+      console.log(u);
     }
     fetchData();
   }, []);
@@ -33,13 +33,22 @@ const Contribute = () => {
           <div className="w-full max-w-3xl">
             {users.map(user => (
               <div key={user._id} className="border-2 w-full border-gray-700 shadow-md rounded-lg flex items-center p-6 mb-10">
-                <Image src={user.profilePic} alt={user.projectName} width={16} height={16} className="rounded-full mr-4" />
+                <div className="w-16 h-16 mr-4 flex-shrink-0">
+                  <Image 
+                    src={user.profilePic ? `/uploads/${user.profilePic}` : "/avatar.gif"}
+                    alt={user.projectName} 
+                    width={64} 
+                    height={64} 
+                    className="rounded-full object-cover"
+                    onError={(e) => { e.target.src = "/avatar.gif"; }}
+                  />
+                </div>
                 <div className="text-left flex-grow">
                   <h2 className="text-2xl font-semibold mb-1">{user.projectName}</h2>
                   <p className="text-lg mb-2">By {user.creatorName}</p>
                   <p className="text-gray-400 mb-4">{user.description}</p>
                 </div>
-                <Link href={{ pathname: `/${user.username}`, query: { userData: JSON.stringify(user) } }}>
+                <Link href={`/${user?.creatorName}`}>
                   <div className="text-blue-500 hover:underline ml-4">Contribute</div>
                 </Link>
               </div>

@@ -1,6 +1,6 @@
 "use client"
 import Script from 'next/script'
-import React from 'react'
+import React, { useCallback } from 'react'
 import { useSession, signIn, signOut } from "next-auth/react"
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
@@ -12,14 +12,17 @@ const PaymentPage = ({ userData }) => {
     const { register, handleSubmit, watch, formState: { errors }, } = useForm()
     const { data: session } = useSession();
     const router = useRouter();
-    const [cover, setcover] = useState();
+    const [coverError, setCoverError] = useState(false);
+    const [profileError, setProfileError] = useState(false);
+    const [coverTryCount, setCoverTryCount] = useState(0);
+    const [profileTryCount, setProfileTryCount] = useState(0);
 
     useEffect(() => {
-        if (userData.projectName === "Faxityy") {
-            setcover("https://c10.patreonusercontent.com/4/patreon-media/p/campaign/2854321/0713ec8c651540289edc2f90a40df6ae/eyJ3IjoxOTIwLCJ3ZSI6MX0%3D/35.gif?token-time=1717459200&token-hash=nKcV76S8X2qvdY54iQDDYeuNKkUivifYpkGLkuYsVlg%3D");
-        } else {
-            setcover(`/${userData.coverPic}`);
-        }
+        // Reset error states when userData changes
+        setCoverError(false);
+        setProfileError(false);
+        setCoverTryCount(0);
+        setProfileTryCount(0);
     }, [userData]);
 
 
@@ -30,8 +33,14 @@ const PaymentPage = ({ userData }) => {
     const [currentUser, setcurrentUser] = useState()
 
 
-    const onSubmit = (data) => {
+    const onSubmit = async (data) => {
         setpaymentform({ ...data });
+        // Call pay function after setting the form data
+        setTimeout(async () => {
+            if (data.amount && data.name && data.message) {
+                await pay(data);
+            }
+        }, 100);
     }
 
     const handleShow = () => {
@@ -47,54 +56,97 @@ const PaymentPage = ({ userData }) => {
         setcurrentUser(u);
     }
 
+    const fetchData = useCallback(async () => {
+        if (userData && userData.projectName) {
+            let dataArray = await getData(userData.projectName);
+            setdata(dataArray.reverse());
+        }
+    }, [userData]);
+
     useEffect(() => {
         fetchData();
-    });
-
-
-    const fetchData = async () => {
-        let dataArray = await getData(userData.projectName);
-        setdata(dataArray.reverse());
-    }
+    }, [fetchData]);
 
     console.log(userData);
+    console.log('Cover pic filename:', userData.coverPic);
+    console.log('Profile pic filename:', userData.profilePic);
 
 
-    const pay = async () => {
-        let a = await initiate(userData.email, userData.projectName, paymentform, session.user.email);
-        let orderId = a.id;
+    const pay = async (formData = paymentform) => {
+        if (!formData.amount || !formData.name || !formData.message) {
+            console.error('Missing required payment form data');
+            return;
+        }
+        
+        try {
+            let a = await initiate(userData.email, userData.projectName, formData, session.user.email);
+            let orderId = a.id;
 
-        var options = {
-            "key": process.env.NEXT_PUBLIC_KEY_ID, // Enter the Key ID generated from the Dashboard
-            "amount": paymentform.amount, // Amount is in currency subunits. Default currency is INR. Hence, 50000 refers to 50000 paise
-            "currency": "INR",
-            "name": "Get-me-a-Chai", //your business name
-            "description": "It is a croudfunding website.",
-            "image": "/chai.gif",
-            "order_id": orderId, //This is a sample Order ID. Pass the `id` obtained in the response of Step 1
-            "callback_url": "https://crowdfunding-project-gilt.vercel.app/api/razorpay",
-            "prefill": { //We recommend using the prefill parameter to auto-fill customer's contact information especially their phone number
-                "name": "Gaurav Kumar", //your customer's name
-                "email": "gaurav.kumar@example.com",
-                "contact": "9000090000" //Provide the customer's phone number for better conversion rates 
-            },
-            "notes": {
-                "address": "Razorpay Corporate Office"
-            },
-            "theme": {
-                "color": "#3399cc"
-            }
-        };
+            var options = {
+                "key": process.env.NEXT_PUBLIC_KEY_ID, // Enter the Key ID generated from the Dashboard
+                "amount": formData.amount, // Amount is in currency subunits. Default currency is INR. Hence, 50000 refers to 50000 paise
+                "currency": "INR",
+                "name": "Get-me-a-Chai", //your business name
+                "description": "It is a croudfunding website.",
+                "image": "/chai.gif",
+                "order_id": orderId, //This is a sample Order ID. Pass the `id` obtained in the response of Step 1
+                "callback_url": "https://crowdfunding-project-gilt.vercel.app/api/razorpay",
+                "prefill": { //We recommend using the prefill parameter to auto-fill customer's contact information especially their phone number
+                    "name": formData.name, //your customer's name
+                    "email": session.user.email,
+                    "contact": "9000090000" //Provide the customer's phone number for better conversion rates 
+                },
+                "notes": {
+                    "address": "Razorpay Corporate Office"
+                },
+                "theme": {
+                    "color": "#3399cc"
+                }
+            };
 
-        var rzp1 = new Razorpay(options);
-        rzp1.open();
+            var rzp1 = new Razorpay(options);
+            rzp1.open();
+        } catch (error) {
+            console.error('Payment initiation failed:', error);
+        }
     }
 
-    useEffect(() => {
-        pay();
-    }, [pay]);
-    
-    
+    // Helper function to get the correct image path with multiple attempts
+    const getImageSrc = (filename, isProfile = false, tryCount = 0) => {
+        if (!filename) return isProfile ? "/avatar.gif" : "/chai.gif";
+        
+        console.log(`Getting image src for: "${filename}", isProfile: ${isProfile}, tryCount: ${tryCount}`);
+        
+        switch (tryCount) {
+            case 0:
+                // First try: direct path in public folder
+                return `/${filename}`;
+            case 1:
+                // Second try: uploads folder
+                return `/uploads/${filename}`;
+            default:
+                // Final fallback
+                return isProfile ? "/avatar.gif" : "/chai.gif";
+        }
+    };
+
+    const handleCoverError = () => {
+        console.log('Cover image failed, try count:', coverTryCount);
+        if (coverTryCount < 2) {
+            setCoverTryCount(coverTryCount + 1);
+        } else {
+            setCoverError(true);
+        }
+    };
+
+    const handleProfileError = () => {
+        console.log('Profile image failed, try count:', profileTryCount);
+        if (profileTryCount < 2) {
+            setProfileTryCount(profileTryCount + 1);
+        } else {
+            setProfileError(true);
+        }
+    };
 
     return (
         <>
@@ -102,9 +154,29 @@ const PaymentPage = ({ userData }) => {
 
             {session &&
                 <div className='flex flex-col justify-start items-start'>
-                    <div className="cover size-fit"><Image className='size-fit bg-cover' width={1} height={1} src={cover} alt="error" /></div>
+                    <div className="cover w-full h-48 relative">
+                        <Image 
+                            className='w-full h-full object-cover rounded-lg' 
+                            width={800} 
+                            height={200} 
+                            src={coverError ? "/chai.gif" : getImageSrc(userData.coverPic, false, coverTryCount)}
+                            alt="Cover image" 
+                            onError={handleCoverError}
+                        />
+                    </div>
                     <div className='h-fit w-full flex flex-col justify-start items-center gap-10'>
-                        <div className='w-full h-fit'><div className='relative w-full h-24 flex justify-center items-center'><Image className='z-20 rounded-lg absolute top-[-30px]' height={128} width={128} src={`/${userData.profilePic}`} display="block" alt="error" /></div></div>
+                        <div className='w-full h-fit'>
+                            <div className='relative w-full h-24 flex justify-center items-center'>
+                                <Image 
+                                    className='z-20 rounded-full absolute top-[-30px] object-cover' 
+                                    height={128} 
+                                    width={128} 
+                                    src={profileError ? "/avatar.gif" : getImageSrc(userData.profilePic, true, profileTryCount)}
+                                    alt="Profile picture" 
+                                    onError={handleProfileError}
+                                />
+                            </div>
+                        </div>
                         <div className='h-fit w-full flex justify-start items-center flex-col gap-1'>
                             <h3 className='text-3xl font-bold'>{userData.projectName}</h3>
                             <p>{userData.creatorName}</p>

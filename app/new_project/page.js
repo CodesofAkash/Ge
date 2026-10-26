@@ -68,12 +68,33 @@ const Project = () => {
                     <label htmlFor="profilePic" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Profile Picture</label>
                     <input
                         {...register("profilePic", { required: true })}
-                        onChange={(e) => {
+                        onChange={async (e) => {
                             const selectedFile = e.target.files[0];
                             if (selectedFile) {
                                 const url = URL.createObjectURL(selectedFile);
                                 setFileUrl(url);
-                                setinfo({ ...info, profilePic: selectedFile.name });
+                                
+                                // Upload file to server
+                                const formData = new FormData();
+                                formData.append('file', selectedFile);
+                                
+                                try {
+                                    const response = await fetch('/api/upload', {
+                                        method: 'POST',
+                                        body: formData,
+                                    });
+                                    const result = await response.json();
+                                    
+                                    if (result.success) {
+                                        setinfo({ ...info, profilePic: result.filename });
+                                    } else {
+                                        console.error('Upload failed:', result.message);
+                                        setinfo({ ...info, profilePic: selectedFile.name });
+                                    }
+                                } catch (error) {
+                                    console.error('Upload error:', error);
+                                    setinfo({ ...info, profilePic: selectedFile.name });
+                                }
                             }
                         }}
                         className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400"
@@ -86,12 +107,33 @@ const Project = () => {
                     <label htmlFor="coverPic" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Cover Picture</label>
                     <input
                         {...register("coverPic")}
-                        onChange={(e) => {
+                        onChange={async (e) => {
                             const selectedFile = e.target.files[0];
                             if (selectedFile) {
                                 const url = URL.createObjectURL(selectedFile);
                                 setFileUrl(url);
-                                setinfo({ ...info, coverPic: selectedFile.name });
+                                
+                                // Upload file to server
+                                const formData = new FormData();
+                                formData.append('file', selectedFile);
+                                
+                                try {
+                                    const response = await fetch('/api/upload', {
+                                        method: 'POST',
+                                        body: formData,
+                                    });
+                                    const result = await response.json();
+                                    
+                                    if (result.success) {
+                                        setinfo({ ...info, coverPic: result.filename });
+                                    } else {
+                                        console.error('Upload failed:', result.message);
+                                        setinfo({ ...info, coverPic: selectedFile.name });
+                                    }
+                                } catch (error) {
+                                    console.error('Upload error:', error);
+                                    setinfo({ ...info, coverPic: selectedFile.name });
+                                }
                             }
                         }}
                         className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400"
